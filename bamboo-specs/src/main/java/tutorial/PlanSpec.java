@@ -1,6 +1,9 @@
 package tutorial;
 
 import com.atlassian.bamboo.specs.api.BambooSpec;
+import com.atlassian.bamboo.specs.api.builders.deployment.Deployment;
+import com.atlassian.bamboo.specs.api.builders.deployment.Environment;
+import com.atlassian.bamboo.specs.api.builders.deployment.ReleaseNaming;
 import com.atlassian.bamboo.specs.api.builders.plan.Job;
 import com.atlassian.bamboo.specs.api.builders.plan.Plan;
 import com.atlassian.bamboo.specs.api.builders.plan.PlanIdentifier;
@@ -25,38 +28,36 @@ public class PlanSpec {
      */
     public static void main(String[] args) throws Exception {
         // by default credentials are read from the '.credentials' file
-        BambooServer bambooServer = new BambooServer("http://localhost:8085");
+        BambooServer bambooServer = new BambooServer("https://my_host_of_bamboo/bamboo");
 
         Plan plan = new PlanSpec().createPlan();
         bambooServer.publish(plan);
 
-        PlanPermissions planPermission = new PlanSpec().createPlanPermission(plan.getIdentifier());
-        bambooServer.publish(planPermission);
-    }
-
-    PlanPermissions createPlanPermission(PlanIdentifier planIdentifier) {
-        Permissions permissions = new Permissions()
-                .userPermissions("pablorodriguez", PermissionType.ADMIN)
-                .groupPermissions("bamboo-admin", PermissionType.ADMIN)
-                .loggedInUserPermissions(PermissionType.BUILD)
-                .anonymousUserPermissionView();
-
-        return new PlanPermissions(planIdentifier)
-                .permissions(permissions);
+        Deployment myDeployment = new PlanSpec().createDeployment();
+        bambooServer.publish(myDeployment);
     }
 
     Project project() {
         return new Project()
-                .name("My Project")
-                .key("PROJ");
+                .name("CAP")
+                .key("CAP");
+    }
+
+    private Deployment createDeployment() {
+        return new Deployment(new PlanIdentifier("CAP", "NEWBETEST"),
+                "Deployment project name")
+                .releaseNaming(new ReleaseNaming("release-1")
+                        .autoIncrement(true))
+                .environments(new Environment("Test environment")
+                        .tasks(new ScriptTask().inlineBody("echo Hello world!")));
     }
 
     Plan createPlan() {
-        return new Plan(project(), "My Plan", "PLANKEY")
+        return new Plan(project(), "My Plan", "CAPTST")
                 .description("Plan created from (enter repository url of your plan)")
                 .stages(
                     new Stage("Stage 1")
-                            .jobs(new Job("Run", "RUN")
+                            .jobs(new Job("Run", "RUNTST")
                             .tasks(new ScriptTask().inlineBody("echo Hello world!"))));
     }
 }
